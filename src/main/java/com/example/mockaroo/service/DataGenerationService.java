@@ -13,75 +13,57 @@ import com.example.mockaroo.model.GenerateRequest;
 import com.example.mockaroo.model.SchemaField;
 import com.example.mockaroo.util.FakerUtil;
 
+import com.example.mockaroo.model.GenerateRequest;
+import com.example.mockaroo.model.SchemaField;
+import com.example.mockaroo.service.generator.DataGenerator;
+import com.example.mockaroo.service.resolver.GeneratorResolver;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+
 @Service
 public class DataGenerationService {
 
-    public List<Map<String, Object>> generateData(
-            GenerateRequest request
+    private final GeneratorResolver resolver;
+
+    public DataGenerationService(
+            GeneratorResolver resolver
     ) {
 
-        List<Map<String, Object>> data = new ArrayList<>();
+        this.resolver = resolver;
+    }
+
+    public List<Map<String, Object>>
+    generateData(GenerateRequest request) {
+
+        List<Map<String, Object>> result =
+                new ArrayList<>();
 
         for (int i = 0; i < request.getRows(); i++) {
 
-            Map<String, Object> row = new LinkedHashMap<>();
+            Map<String, Object> row =
+                    new LinkedHashMap<>();
 
-            for (SchemaField field : request.getFields()) {
+            for (SchemaField field :
+                    request.getFields()) {
+
+                DataGenerator generator =
+                        resolver.resolve(
+                                field.getType()
+                        );
+
+                Object value =
+                        generator.generate();
 
                 row.put(
                         field.getName(),
-                        generateValue(field.getType())
+                        value
                 );
             }
 
-            data.add(row);
+            result.add(row);
         }
 
-        return data;
-    }
-
-    private Object generateValue(String type) {
-
-        switch (type.toUpperCase()) {
-
-            case "FIRST_NAME":
-                return FakerUtil.faker.name().firstName();
-
-            case "LAST_NAME":
-                return FakerUtil.faker.name().lastName();
-
-            case "FULL_NAME":
-                return FakerUtil.faker.name().fullName();
-
-            case "EMAIL":
-                return FakerUtil.faker.internet().emailAddress();
-
-            case "PHONE":
-                return FakerUtil.faker.phoneNumber().cellPhone();
-
-            case "CITY":
-                return FakerUtil.faker.address().city();
-
-            case "COUNTRY":
-                return FakerUtil.faker.address().country();
-
-            case "ADDRESS":
-                return FakerUtil.faker.address().fullAddress();
-
-            case "COMPANY":
-                return FakerUtil.faker.company().name();
-
-            case "UUID":
-                return UUID.randomUUID().toString();
-
-            case "BOOLEAN":
-                return new Random().nextBoolean();
-
-            case "DATE":
-                return FakerUtil.faker.date().birthday();
-
-            default:
-                return "UNKNOWN_TYPE";
-        }
+        return result;
     }
 }
